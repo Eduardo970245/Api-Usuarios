@@ -126,6 +126,27 @@ app.get('/usuarios', verificarToken, async (req, res) => {
   }
 });
 
+// 5.5 OBTENER UN USUARIO POR ID (usado por ms-prestamos para validar y obtener el nombre
+//     cuando el admin crea un préstamo directo a nombre de otro usuario)
+app.get('/usuarios/:id', verificarToken, async (req, res) => {
+  if (req.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Acceso restringido a administradores' });
+  }
+  try {
+    const { id } = req.params;
+    const resultado = await pool.query(
+      'SELECT id, nombre, email, rol FROM usuarios WHERE id = $1',
+      [id]
+    );
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json(resultado.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 6. ACTUALIZAR ROL DE UN USUARIO (ej. promover a admin)
 app.patch('/usuarios/:id/rol', verificarToken, async (req, res) => {
   if (req.usuario.rol !== 'admin') {
